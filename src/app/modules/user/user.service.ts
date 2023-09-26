@@ -1,6 +1,10 @@
-import httpStatus from 'http-status';
-import ApiError from '../../../Errors/ApiError';
 import bcrypt from 'bcrypt';
+import httpStatus from 'http-status';
+import { JwtPayload, Secret } from 'jsonwebtoken';
+import config from '../../../config';
+import ApiError from '../../../errors/apiError';
+import { jwtHelpers } from '../../../helpers/jwtHelper';
+import { IProduct } from '../products/product.interface';
 import {
   ILoginUser,
   ILoginUserResponse,
@@ -8,10 +12,6 @@ import {
   IUser,
 } from './user.interface';
 import { User } from './user.model';
-import { jwtHelpers } from '../../../helper/jwtHelper';
-import config from '../../../config';
-import { JwtPayload, Secret } from 'jsonwebtoken';
-import { IProduct } from '../products/product.interface';
 
 const createUser = async (userData: IUser) => {
   const isExist = await User.isUserExist(userData?.email);
@@ -20,7 +20,7 @@ const createUser = async (userData: IUser) => {
   }
   userData.password = await bcrypt.hash(
     userData.password,
-    Number(config.bcrypt_salt_rounds)
+    Number(config.bcrypt_salt_rounds),
   );
   const result = await User.create(userData);
   return result;
@@ -44,13 +44,13 @@ const loginUser = async (payload: ILoginUser): Promise<ILoginUserResponse> => {
   const { email: userEmail, password: pass } = isExist;
   const accessToken = jwtHelpers.createToken(
     { userEmail, pass },
-    config.jwt.secret_token as Secret,
-    config.jwt.expire_in as string
+    config.jwt.secret as Secret,
+    config.jwt.expires_in as string,
   );
   const refreshToken = jwtHelpers.createToken(
     { userEmail, pass },
-    config.jwt.secret_refresh_token as Secret,
-    config.jwt.secret_refresh_token_expire_in as string
+    config.jwt.refresh_secret as Secret,
+    config.jwt.refresh_expires_in as string,
   );
 
   return {
@@ -63,9 +63,9 @@ const loginUser = async (payload: ILoginUser): Promise<ILoginUserResponse> => {
 const refreshToken = async (token: string): Promise<IRefreshTokenResponse> => {
   let verifyToken = null;
   try {
-    verifyToken = jwtHelpers.verifiedToken(
+    verifyToken = jwtHelpers.verifyToken(
       token,
-      config.jwt.secret_refresh_token as Secret
+      config.jwt.refresh_secret as Secret,
     );
   } catch (error) {
     throw new ApiError(httpStatus.FORBIDDEN, 'Invalid Refresh Token');
@@ -82,8 +82,8 @@ const refreshToken = async (token: string): Promise<IRefreshTokenResponse> => {
       pass: isExist.password,
     },
 
-    config.jwt.secret_token as Secret,
-    config.jwt.expire_in as string
+    config.jwt.secret as Secret,
+    config.jwt.expires_in as string,
   );
   return {
     accessToken: newAccessToken,
@@ -92,7 +92,7 @@ const refreshToken = async (token: string): Promise<IRefreshTokenResponse> => {
 
 export const addToWishList = async (
   payload: IProduct,
-  user: JwtPayload | null
+  user: JwtPayload | null,
 ) => {
   const isUserExist = await User.findOne({ email: user?.userEmail });
   if (!isUserExist) {
@@ -101,12 +101,12 @@ export const addToWishList = async (
   try {
     const result = await User.updateOne(
       { email: user?.userEmail },
-      { $push: { wishlist: payload } }
+      { $push: { wishlist: payload } },
     );
     if (!result.modifiedCount) {
       return new ApiError(
         httpStatus.NOT_FOUND,
-        'User Not Found add failed failed'
+        'User Not Found add failed failed',
       );
     }
     return result;
@@ -123,38 +123,6 @@ export const getWishList = async (user: JwtPayload | null) => {
   return isUserExist.wishlist;
 };
 
-// export const addToReadList = async (
-//   payload: IBook,
-//   user: JwtPayload | null
-// ) => {
-//   const isUserExist = await User.findOne({ email: user?.userEmail });
-//   if (!isUserExist) {
-//     throw new ApiError(httpStatus.NOT_FOUND, 'User Not Found');
-//   }
-//   try {
-//     const result = await User.updateOne(
-//       { email: user?.userEmail },
-//       { $push: { readinglist: payload } }
-//     );
-//     if (!result.modifiedCount) {
-//       return new ApiError(
-//         httpStatus.NOT_FOUND,
-//         'User Not Found add failed failed'
-//       );
-//     }
-//     return result;
-//   } catch (error) {
-//     throw new ApiError(httpStatus.NOT_FOUND, 'Not found');
-//   }
-// };
-
-// export const getReadList = async (user: JwtPayload | null) => {
-//   const isUserExist = await User.findOne({ email: user?.userEmail });
-//   if (!isUserExist) {
-//     throw new ApiError(httpStatus.NOT_FOUND, 'User Not Found');
-//   }
-//   return isUserExist.readinglist;
-// };
 export const UserService = {
   createUser,
   loginUser,

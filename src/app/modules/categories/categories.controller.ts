@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import catchAsync from '../../../shared/catchAsync';
 import { ICategory } from './categories.interface';
-import sendResponse from '../../../shared/sendRespons';
+import sendResponse from '../../../shared/sendResponse';
 import { CategoriesService } from './categories.serveice';
 import { Request, Response } from 'express';
 

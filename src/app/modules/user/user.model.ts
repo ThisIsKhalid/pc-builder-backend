@@ -37,6 +37,7 @@ userSchema.statics.isUserExist = async function (
 ): Promise<Pick<IUser, 'name' | 'email' | 'password'> | null> {
   return await User.findOne({ email }, { email: 1, password: 1 }).lean();
 };
+
 userSchema.statics.isPasswordMatch = async function (
   givenPassword: string,
   savedPassword: string

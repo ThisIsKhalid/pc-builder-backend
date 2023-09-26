@@ -1,10 +1,10 @@
 import { SortOrder } from 'mongoose';
-import { paginationHelper } from '../../../helper/paginationHelper';
-import IPaginationOption from '../../../interfaces/pagination';
 import { IProduct, IProductsFilter } from './product.interface';
 import { IGenericResponse } from '../../../interfaces/common';
 import { Products } from './product.model';
 import { productSearchableFields } from './product.constants';
+import { paginationHelpers } from '../../../helpers/paginationHelper';
+import { IPaginationOptions } from '../../../interfaces/pagination';
 
 const createProduct = async (productData: IProduct): Promise<IProduct> => {
   const result = await Products.create(productData);
@@ -12,11 +12,11 @@ const createProduct = async (productData: IProduct): Promise<IProduct> => {
 };
 const getProducts = async (
   filters: IProductsFilter,
-  paginationOptions: IPaginationOption
+  paginationOptions: IPaginationOptions
 ): Promise<IGenericResponse<IProduct[]>> => {
   const { searchTerm, ...filterData } = filters;
   const { limit, skip, sortBy, sortOrder, page } =
-    paginationHelper.calculatePagination(paginationOptions);
+    paginationHelpers.calculatePagination(paginationOptions);
 
   const andCondition = [];
 
